@@ -1,0 +1,59 @@
+seed: 461
+use_wandb: false
+input_data_dir: ../datasets/pii_original # pii_mix_v25
+# input_data_dir: ../datasets/pii_mix_v07
+fold: 0
+all_data: false
+outside_threshold: 0.925
+training_mode: 'mixed' # 'pre_training', 'only_comp', 'mixed' ?
+save_model: true
+
+model:
+  backbone_path: mistralai/Mistral-7B-v0.1
+  max_length: 1024
+  stride: 256
+  num_proc: 1
+
+  lora:
+    target_modules:
+      - q_proj
+      - k_proj
+      - v_proj
+      - o_proj
+      # - gate_proj
+      # - up_proj
+      # - down_proj
+    r: 16
+    lora_alpha: 16
+    lora_dropout: 0.1
+    modules_to_save:
+      - classification_head
+
+train_params:
+  per_device_train_batch_size: 1
+  per_device_eval_batch_size: 1 # 4
+  num_train_epochs: 1
+  gradient_accumulation_steps: 8
+  warmup_pct: 0.1
+  eval_frequency: 100
+  patience: 10
+  save_trigger: 0.0
+  use_mask_aug: false
+  mask_aug_prob: 0.05
+
+optimizer:
+  name: AdamW8bit
+  head_lr: 1e-5
+  lr: 5e-5
+  weight_decay: 1e-3
+  max_grad_norm: 0.5
+
+outputs:
+  model_dir: ../models/r_llm_mistral_original
+  # model_dir: models/r_llm_mistral_v07 # r_llm_mistral_m25
+
+wandb:
+  project: pii-detection
+  run_name: exp001-mistral-orig
+  tags:
+    - mistral

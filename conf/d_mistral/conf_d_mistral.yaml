@@ -1,0 +1,80 @@
+seed: 461
+use_wandb: false
+input_data_dir: ../datasets/pii_mix_v31
+fold: 0
+all_data: false
+comp_multiplier: 1 #4
+outside_threshold: 0.9
+save_model: true
+
+sample_external_examples: false
+external_sampling_rate: 0.15
+
+datamix_sets:
+  - nicholas
+  - mpware
+  - raja_v1
+  - raja_v2
+  - raja_v3
+  - raja_v4
+  - raja_v5
+  - raja_v5_curated
+  - raja_old
+
+datamix_weights:
+  - 0 # nicholas
+  - 0 # mpware #1
+  - 0 # raja_v1
+  - 0 # raja_v2
+  - 0 # raja_v3
+  - 0 # raja_v4
+  - 0 # raja_v5 #1
+  - 0 # raja_v5_curated #1
+  - 0 # raja_old #1
+
+
+model:
+  backbone_path: mistralai/Mistral-7B-v0.1
+  max_length: 1024
+  stride: 128
+  num_proc: 1
+
+  lora:
+    target_modules:
+      - q_proj
+      - k_proj
+      - v_proj
+      - o_proj
+      - down_proj
+    r: 8
+    lora_alpha: 16
+    lora_dropout: 0.1
+    modules_to_save:
+      - classification_head
+
+train_params:
+  per_device_train_batch_size: 1
+  per_device_eval_batch_size: 1 # 4
+  num_train_epochs: 1 # 1
+  gradient_accumulation_steps: 4
+  warmup_pct: 0.1
+  eval_frequency: 100
+  patience: 10
+  save_trigger: 0.0
+
+
+optimizer:
+  name: AdamW8bit
+  head_lr: 1e-5
+  lr: 2e-5
+  weight_decay: 1e-3
+  max_grad_norm: 0.3
+
+outputs:
+  model_dir: ../models/r_mistral
+
+wandb:
+  project: pii-detection
+  run_name: exp01-mistral # exp201-mistral
+  tags:
+    - mistral
