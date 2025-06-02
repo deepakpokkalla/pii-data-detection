@@ -22,8 +22,6 @@ class PIIDataset:
             ex_input_tokens = [" " + t if ls else t for t, ls in zip(ex_tokens, ex_leading_whitespace)]
             input_tokens.append(ex_input_tokens)
 
-        # Understood stride & overflowing tokens. why no padding but truncation - handled in collate_fn?? 
-        # why done differently from nicholas notebook?
         re_tokenized_text = self.tokenizer(
             input_tokens,
             padding=False,
@@ -32,15 +30,15 @@ class PIIDataset:
             add_special_tokens=True,
             is_split_into_words=True,
             return_overflowing_tokens=True,
-            return_token_type_ids=False,
+            return_token_type_ids=False, # needed for sentence-pair tasks (not here)
             stride=self.cfg.model.stride,
             return_length=True,
-        )  # length more than original number of examples (UNDERSTAND THIS!!)
+        )  # length more than original number of examples, as longer token seq_length's
 
-        # mapping tokens with corresponding documents; repeated if overflowing tokens
-        # Link: https://huggingface.co/learn/nlp-course/chapter6/3b
+        # Handling long contexts: https://huggingface.co/learn/nlp-course/chapter6/3b
+        # register which document each tokenized chunk belongs to
         document = [
-            examples['document'][sid] for sid in re_tokenized_text['overflow_to_sample_mapping']
+            examples['document'][sen_id] for sen_id in re_tokenized_text['overflow_to_sample_mapping']
         ]
 
         to_return['document'] = document
@@ -48,6 +46,7 @@ class PIIDataset:
         to_return['attention_mask'] = re_tokenized_text['attention_mask']
         to_return['input_length'] = re_tokenized_text['length'] # length of each tokenized sequence
 
+        # word_ids: Returns a list mapping the tokens to their actual word_ids (indices) in the initial sentence for a fast tokenizer.
         word_ids = []
         for idx in range(len(re_tokenized_text['input_ids'])):
             ex_word_ids = re_tokenized_text.word_ids(idx)
@@ -55,8 +54,7 @@ class PIIDataset:
             word_ids.append(ex_word_ids)
         to_return['word_ids'] = word_ids
 
-        # label alignment --- Understood this! 
-        # word_ids: Return a list mapping the tokens to their actual word in the initial sentence for a fast tokenizer.
+        # extract and align labels per chunk
         if 'provided_labels' in examples:
             new_labels = []
             for idx, eid in enumerate(re_tokenized_text['overflow_to_sample_mapping']):
@@ -71,7 +69,7 @@ class PIIDataset:
         return to_return
 
     def get_dataset(self, examples):
-        # examples = deepcopy(examples)
+        # examples = deepcopy(examples) # creates an independent copy
 
         dataset_dict = {
             "document": [x["document"] for x in examples],
@@ -80,17 +78,17 @@ class PIIDataset:
             "trailing_whitespace": [x["trailing_whitespace"] for x in examples],
         }
 
-        if "labels" in examples[0]:  # test examples don't have labels ---
+        if "labels" in examples[0]:  # test examples don't have labels
             dataset_dict["provided_labels"] = [x["labels"] for x in examples]
 
         task_dataset = Dataset.from_dict(dataset_dict)
 
         task_dataset = task_dataset.map(
             self.process_inputs,
-            batched=True, # batch processing --> process_inputs
-            batch_size=512,
+            batched=True,
+            batch_size=1, #512,
             num_proc=self.cfg.model.num_proc,
-            remove_columns=task_dataset.column_names, # remove all columns names
+            remove_columns=task_dataset.column_names,
         )
 
         return task_dataset

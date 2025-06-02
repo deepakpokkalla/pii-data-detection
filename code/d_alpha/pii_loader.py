@@ -26,11 +26,11 @@ class PIIDataCollator(DataCollatorForTokenClassification):
     """
     Data collator for the PII Data Detection task
     """
-    tokenizer = None # provided
+    tokenizer = None
     padding = True
     max_length = None
-    pad_to_multiple_of = None # provided
-    label_pad_token_id = -100 # self.ignore_idx = -100 # labels to be ignored for loss computations
+    pad_to_multiple_of = None
+    label_pad_token_id = -100 # labels to be ignored for loss computations
     return_tensors = "pt"
 
     # invoked to collate the features (examples in train_ds or valid_ds)
@@ -38,48 +38,42 @@ class PIIDataCollator(DataCollatorForTokenClassification):
         """
         prepare a batch data from features
         """
-        labels = None
-        # print(features[0].keys())
-        # features: ['document', 'input_ids', 'attention_mask', 'input_length', 'word_ids', 'labels']
-        if "labels" in features[0].keys():
-            labels = [feature["labels"] for feature in features]
+        labels = [f["labels"] for f in features] if "labels" in features[0] else None
+        documents = [f["document"] for f in features]
+        word_ids = [f["word_ids"] for f in features]
 
-        documents = [feature["document"] for feature in features]
-        word_ids = [feature["word_ids"] for feature in features] # understand from process_inputs dataset
-
-        features = [ # replacing features here
-            {
-                "input_ids": feature["input_ids"],
-                "attention_mask": feature["attention_mask"],
-            } for feature in features
+        # Extract just input_ids and attention_mask for padding 
+        inputs = [
+            {'input_ids': f['input_ids'],
+             'attention_mask': f['attention_mask']
+            } 
+            for f in features
         ]
 
-        # default padding behaviour as set to "None" above
-        batch = self.tokenizer.pad( # supplying only "input_ids", "attention_mask"?
-            features,
+        batch = self.tokenizer.pad(
+            inputs,
             padding=self.padding,
             max_length=self.max_length,
             pad_to_multiple_of=self.pad_to_multiple_of,
-            return_tensors=None,
+            return_tensors=None, # convert later manually
         )
 
         # padding for word_ids
         seq_len = len(batch["input_ids"][0])
-        for idx, ex_word_ids in enumerate(word_ids): # understand this
-            ex_word_ids = ex_word_ids + [-1] * (seq_len - len(ex_word_ids))
-            word_ids[idx] = ex_word_ids
+        for idx, ex_word_ids in enumerate(word_ids):
+            word_ids[idx] = ex_word_ids + [-1] * (seq_len - len(ex_word_ids))
 
         batch["word_ids"] = word_ids
         batch["document"] = documents
 
+        # padding for labels: set "-100" to ignore
         if labels is not None:
-            # padding for labels
             for idx, ex_labels in enumerate(labels):
-                ex_labels = ex_labels + [self.label_pad_token_id] * (seq_len - len(ex_labels))
-                labels[idx] = ex_labels
+                labels[idx] = ex_labels + [self.label_pad_token_id] * (seq_len - len(ex_labels))
             batch["labels"] = labels
 
-        tensor_keys = [ # in batch
+        # convert to tensors
+        tensor_keys = [
             "input_ids",
             "attention_mask",
             "word_ids",
@@ -115,28 +109,28 @@ class PIIDataCollatorTrain(DataCollatorForTokenClassification):
         """
         prepare a batch data from features
         """
-        labels = None
-        if "labels" in features[0].keys():
-            labels = [feature["labels"] for feature in features]
+        labels = [f["labels"] for f in features] if "labels" in features[0] else None
+        documents = [f["document"] for f in features]
+        word_ids = [f["word_ids"] for f in features]
 
-        documents = [feature["document"] for feature in features]
-        word_ids = [feature["word_ids"] for feature in features]
-
-        features = [
+        # Extract just input_ids and attention_mask for padding 
+        inputs = [
             {
                 "input_ids": feature["input_ids"],
                 "attention_mask": feature["attention_mask"],
             } for feature in features
         ]
 
+        # returns a batch encoding
         batch = self.tokenizer.pad(
-            features,
+            inputs,
             padding=self.padding,
             max_length=self.max_length,
             pad_to_multiple_of=self.pad_to_multiple_of,
             return_tensors=None,
         )
 
+        # Random masking during training (similar to BERT pretraining), avoids SPL tokens. 
         if self.cfg.train_params.use_mask_aug:
             batch["input_ids"] = apply_mask_augmentation(
                 batch["input_ids"], self.tokenizer, self.cfg.train_params.mask_aug_prob
@@ -150,14 +144,15 @@ class PIIDataCollatorTrain(DataCollatorForTokenClassification):
 
         batch["word_ids"] = word_ids
         batch["document"] = documents
-
+        
+        # padding for labels: set "-100" to ignore 
         if labels is not None:
-            # padding for labels
             for idx, ex_labels in enumerate(labels):
                 ex_labels = ex_labels + [self.label_pad_token_id] * (seq_len - len(ex_labels))
                 labels[idx] = ex_labels
             batch["labels"] = labels
 
+        # convert to tensors
         tensor_keys = [
             "input_ids",
             "attention_mask",
@@ -173,8 +168,7 @@ class PIIDataCollatorTrain(DataCollatorForTokenClassification):
 
         return batch
 
-# Just printing samples from training (tokens: labels) for visualization
-
+# Print samples from train dataloader (tokens: labels) for visualization
 def show_batch(
         batch,
         tokenizer,
@@ -197,7 +191,7 @@ def show_batch(
         # skip_special_tokens = False by default
         input_text = tokenizer.decode(batch['input_ids'][idx], skip_special_tokens=False)
         tokens = tokenizer.convert_ids_to_tokens(batch['input_ids'][idx])
-        print_fn(f"INPUT:\n{input_text}")
+        # print_fn(f"INPUT:\n{input_text}")
 
         if "infer" not in task.lower(): # not inference
             print_fn("--"*20)
