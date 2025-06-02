@@ -99,7 +99,7 @@ If you like the project and want to use it somewhere, please use this citation:
 @misc{pokkalla2024piidetection,
   author = {Deepak Pokkalla and Raja Biswas},
   title = {pii-data-detection},
-  year = {2025},
+  year = {2024},
   publisher = {GitHub},
   journal = {GitHub repository},
   howpublished = {\url{https://github.com/deepakpokkalla/pii-data-detection.git}}
