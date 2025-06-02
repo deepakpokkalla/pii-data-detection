@@ -96,7 +96,7 @@ which will use the `config/d_alpha/conf_d_alpha.yaml`
 If you like the project and want to use it somewhere, please use this citation: 
 
 ```
-@misc{pokkalla2025piidetection,
+@misc{pokkalla2024piidetection,
   author = {Deepak Pokkalla and Raja Biswas},
   title = {pii-data-detection},
   year = {2025},
