@@ -4,10 +4,11 @@ This repository contains the full pipeline and solution for the Kaggle competiti
 
 📅 Competition Link: [Kaggle PII Data Detection](https://www.kaggle.com/competitions/pii-detection-removal-from-educational-data)
 
+📅 Competition Link: <a href="https://www.kaggle.com/competitions/pii-detection-removal-from-educational-data" target="_blank">Kaggle PII Data Detection</a>
 
 ## Quick start
 
-You can close the repository, setup an environment, and start with the scripts.
+You can clone the repository, setup an environment, and start with the scripts.
 
 ## Environment Setup 
 
@@ -62,6 +63,8 @@ pip install kaggle
 ```
 
 Setup the API token following the instructions provided [here](https://www.kaggle.com/docs/api).
+
+Setup the API token following the instructions provided <a href="https://www.kaggle.com/docs/api" target="_blank">here.</a>
 
 Let's download the dataset from kaggle and setup:
 
