@@ -145,8 +145,8 @@ def run_evaluation(cfg, accelerator, model, valid_dl, id2label, reference_df):
 # -------- Main Function ----------------------------------------------------------------#
 
 
-@hydra.main(version_base=None, config_path="../conf/d_gemma", config_name="conf_d_gemma_2b")
-def run_training(cfg):
+@hydra.main(version_base=None, config_path="../config/d_gemma", config_name="conf_d_gemma_2b")
+def main(cfg):
     # ------- Accelerator ---------------------------------------------------------------#
     accelerator = setup_training_run(cfg)
     cfg_dict = OmegaConf.to_container(cfg, resolve=True)
@@ -503,4 +503,4 @@ def run_training(cfg):
 
 
 if __name__ == "__main__":
-    run_training()
+    main()

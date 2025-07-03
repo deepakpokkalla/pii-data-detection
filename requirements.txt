@@ -9,3 +9,7 @@ hydra-core
 pynvml
 sentencepiece
 einops
+torch 
+numpy
+pandas
+wandb

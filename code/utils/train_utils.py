@@ -153,19 +153,14 @@ class EMA():
                 param.data = self.backup[name]
         self.backup = {}
 
-
-# ---
+# create reference dataframe for evaluation based on competition requirements
 def create_reference_df(examples):
     examples = deepcopy(examples)
     reference_df = pd.DataFrame(examples)[['document', 'tokens', 'labels']].copy()
     reference_df = reference_df.explode(['tokens', 'labels']).reset_index(
         drop=True).rename(columns={'tokens': 'token', 'labels': 'label'})
-    reference_df['token'] = reference_df.groupby('document').cumcount()
+    reference_df['token'] = reference_df.groupby('document').cumcount() # index tokens in each document
     reference_df = reference_df[reference_df['label'] != 'O'].copy()
-
-    # # ---
-    # reference_df = reference_df[reference_df['label'].apply(lambda x: 'OTHER' not in x)].copy()
-    # # ---
 
     reference_df = reference_df.reset_index().rename(columns={'index': 'row_id'})
     reference_df = reference_df[['row_id', 'document', 'token', 'label']].copy()
