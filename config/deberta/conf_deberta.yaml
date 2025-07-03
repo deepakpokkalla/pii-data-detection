@@ -1,0 +1,44 @@
+seed: 461
+use_wandb: false
+input_data_dir: ../datasets/pii-kaggle-data 
+# input_data_dir: ./datasets/pii-kaggle-data # debug path
+fold: 0
+all_data: false
+outside_threshold: 0.995 # threshold to classify as outside tokens
+training_mode: 'pre_training'
+comp_multiplier: 1
+save_model: true
+
+model:
+  backbone_path: microsoft/deberta-v3-large
+  max_length: 1024
+  stride: 256
+  num_proc: 1
+
+train_params:
+  per_device_train_batch_size: 4 
+  per_device_eval_batch_size: 4
+  num_train_epochs: 2 #16
+  gradient_accumulation_steps: 1 #4
+  warmup_pct: 0.1
+  eval_frequency: 1 #100 # 500
+  patience: 10
+  save_trigger: 0.0
+  use_mask_aug: false
+  mask_aug_prob: 0.05
+
+optimizer:
+  name: AdamW #AdamW8bit
+  head_lr: 5e-6 
+  lr: 1e-5
+  weight_decay: 1e-3
+  max_grad_norm: 0.5
+
+outputs:
+  model_dir: ../models/r_alpha_base
+
+wandb:
+  project: pii-detection
+  run_name: exp001-baseline
+  tags:
+    - deberta
